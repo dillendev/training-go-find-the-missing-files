@@ -81,22 +81,23 @@ func findMatch(path string, terms []string) (Match, error) {
 
 	defer file.Close()
 
-	var buff [2048]byte
 	reader := bufio.NewReader(file)
 
-	if _, err := reader.Read(buff[:]); err != nil {
-		if errors.Is(err, io.EOF) {
-			return Match{}, errNoMatch
+	for {
+		var buff [4096]byte
+
+		if _, err := reader.Read(buff[:]); err != nil {
+			if errors.Is(err, io.EOF) {
+				return Match{}, errNoMatch
+			}
+
+			return Match{}, err
 		}
 
-		return Match{}, err
-	}
-
-	for _, term := range terms {
-		if bytes.Contains(buff[:], []byte(term)) {
-			return Match{Path: path}, nil
+		for _, term := range terms {
+			if bytes.Contains(buff[:], []byte(term)) {
+				return Match{Path: path}, nil
+			}
 		}
 	}
-
-	return Match{}, errNoMatch
 }
