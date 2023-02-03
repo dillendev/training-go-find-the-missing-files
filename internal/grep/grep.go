@@ -13,8 +13,8 @@ import (
 
 var errNoMatch = errors.New("no matches")
 
-func Search(root string, terms []string) chan (Match) {
-	matches := make(chan Match)
+func Search(root string, terms []string) chan (string) {
+	matches := make(chan string)
 
 	go func() {
 		var wg sync.WaitGroup
@@ -28,7 +28,7 @@ func Search(root string, terms []string) chan (Match) {
 	return matches
 }
 
-func search(wg *sync.WaitGroup, matches chan (Match), root string, terms []string) {
+func search(wg *sync.WaitGroup, matches chan (string), root string, terms []string) {
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		log.Printf("error reading directory %s: %s", root, err.Error())
@@ -73,10 +73,10 @@ func search(wg *sync.WaitGroup, matches chan (Match), root string, terms []strin
 	}
 }
 
-func findMatch(path string, terms []string) (Match, error) {
+func findMatch(path string, terms []string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return Match{}, err
+		return "", err
 	}
 
 	defer file.Close()
@@ -84,19 +84,19 @@ func findMatch(path string, terms []string) (Match, error) {
 	reader := bufio.NewReader(file)
 
 	for {
-		var buff [4096]byte
+		var buf [4096]byte
 
-		if _, err := reader.Read(buff[:]); err != nil {
+		if _, err := reader.Read(buf[:]); err != nil {
 			if errors.Is(err, io.EOF) {
-				return Match{}, errNoMatch
+				return "", errNoMatch
 			}
 
-			return Match{}, err
+			return "", err
 		}
 
 		for _, term := range terms {
-			if bytes.Contains(buff[:], []byte(term)) {
-				return Match{Path: path}, nil
+			if bytes.Contains(buf[:], []byte(term)) {
+				return path, nil
 			}
 		}
 	}

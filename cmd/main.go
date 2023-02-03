@@ -21,7 +21,7 @@ func main() {
 
 	matches := grep.Search(root, terms)
 
-	for match := range matches {
-		fmt.Println(match.Path)
+	for path := range matches {
+		fmt.Println(path)
 	}
 }
