@@ -17,16 +17,18 @@ func Search(root string, terms []string) chan (Match) {
 	matches := make(chan Match)
 
 	go func() {
-		search(root, terms, matches)
+		var wg sync.WaitGroup
+		search(&wg, matches, root, terms)
+
+		wg.Wait()
+
 		close(matches)
 	}()
 
 	return matches
 }
 
-func search(root string, terms []string, matches chan (Match)) {
-	var wg sync.WaitGroup
-
+func search(wg *sync.WaitGroup, matches chan (Match), root string, terms []string) {
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		log.Printf("error reading directory %s: %s", root, err.Error())
@@ -41,7 +43,7 @@ func search(root string, terms []string, matches chan (Match)) {
 
 			go func() {
 				defer wg.Done()
-				search(path, terms, matches)
+				search(wg, matches, path, terms)
 			}()
 			continue
 		}
@@ -69,8 +71,6 @@ func search(root string, terms []string, matches chan (Match)) {
 			matches <- match
 		}()
 	}
-
-	wg.Wait()
 }
 
 func findMatch(path string, terms []string) (Match, error) {
